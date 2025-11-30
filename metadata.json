@@ -1,0 +1,5 @@
+{
+  "name": "TikTok Live Memory Match",
+  "description": "An interactive Matching Card game controlled by TikTok Live comments.",
+  "requestFramePermissions": []
+}
