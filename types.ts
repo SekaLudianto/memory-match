@@ -1,3 +1,5 @@
+export type Theme = 'dark' | 'light' | 'cute';
+
 export interface TikTokProfile {
   uniqueId: string;
   nickname: string;

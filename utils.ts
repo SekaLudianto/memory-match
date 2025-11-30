@@ -2,12 +2,17 @@ import { CardItem } from './types';
 import { 
   Ghost, Heart, Zap, Star, Moon, Sun, 
   Cloud, Umbrella, Music, Camera, Gift, Trophy,
-  Flame, Anchor, Feather, Key
+  Flame, Anchor, Feather, Key,
+  // Fruits & Food Expansion
+  Apple, Banana, Cherry, Grape, Citrus, 
+  Carrot, Pizza, IceCream, Cookie, Cake, 
+  Candy, Lollipop, Coffee, Beer, Wine
 } from 'lucide-react';
 
 // Map icon IDs to Lucide components for rendering
 // Extended list to provide more variety
 export const ICON_MAP: Record<number, any> = {
+  // Set 1: Objects & Nature
   0: Ghost,
   1: Heart,
   2: Zap,
@@ -23,7 +28,26 @@ export const ICON_MAP: Record<number, any> = {
   12: Flame,
   13: Anchor,
   14: Feather,
-  15: Key
+  15: Key,
+  
+  // Set 2: Fruits (Buah-buahan)
+  16: Apple,
+  17: Banana,
+  18: Cherry,
+  19: Grape,
+  20: Citrus, // Lemon/Orange
+  
+  // Set 3: Food & Drinks (Makanan)
+  21: Carrot,
+  22: Pizza,
+  23: IceCream,
+  24: Cookie,
+  25: Cake,
+  26: Candy,
+  27: Lollipop,
+  28: Coffee,
+  29: Beer,
+  30: Wine
 };
 
 export const generateDeck = (gridSize: number): CardItem[] => {
@@ -36,6 +60,7 @@ export const generateDeck = (gridSize: number): CardItem[] => {
   const availableIconIds = Object.keys(ICON_MAP).map(Number);
   
   // 2. Shuffle the available icons first (Ensures variety each session)
+  // This logic ensures we pick a RANDOM set of icons from our pool
   for (let i = availableIconIds.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [availableIconIds[i], availableIconIds[j]] = [availableIconIds[j], availableIconIds[i]];

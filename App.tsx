@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { socketService } from './services/socket';
-import { CardItem, GameStatus, PlayerScore, ChatMessage, ConnectionState } from './types';
+import { CardItem, GameStatus, PlayerScore, ChatMessage, ConnectionState, Theme } from './types';
 import { generateDeck } from './utils';
 
 // Components
@@ -12,6 +12,7 @@ import { GameOverOverlay } from './components/GameOverOverlay';
 
 const GRID_SIZE = 20; // 5x4 grid
 const LEADERBOARD_STORAGE_KEY = 'TIKTOK_MEMORY_LEADERBOARD';
+const THEME_STORAGE_KEY = 'TIKTOK_MEMORY_THEME';
 
 // Interface untuk item di dalam antrian
 interface MoveRequest {
@@ -21,6 +22,11 @@ interface MoveRequest {
 }
 
 const App: React.FC = () => {
+  // Theme State
+  const [currentTheme, setCurrentTheme] = useState<Theme>(() => {
+    return (localStorage.getItem(THEME_STORAGE_KEY) as Theme) || 'dark';
+  });
+
   // Game State
   const [cards, setCards] = useState<CardItem[]>([]);
   const [status, setStatus] = useState<GameStatus>(GameStatus.IDLE);
@@ -65,10 +71,14 @@ const App: React.FC = () => {
     statusRef.current = status;
   }, [cards, isProcessing, status]);
 
-  // Persist Leaderboard whenever it changes
+  // Persist Data
   useEffect(() => {
     localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaderboard));
   }, [leaderboard]);
+
+  useEffect(() => {
+    localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+  }, [currentTheme]);
 
   // Initialize Game
   const startGame = useCallback(() => {
@@ -109,7 +119,6 @@ const App: React.FC = () => {
   };
 
   // CORE LOGIC: Execute Move
-  // Ini fungsi yang benar-benar menjalankan logika game
   const executeMove = useCallback((firstId: number, secondId: number, player: ChatMessage) => {
     const currentCards = cardsRef.current;
     
@@ -142,9 +151,6 @@ const App: React.FC = () => {
       const c1 = currentCards[card1Index];
       const c2 = currentCards[card2Index];
       
-      // Karena state cardsRef mungkin berubah selama timeout, kita perlu akses yang terbaru via state setter logic atau ref
-      // Tapi untuk comparison c1 dan c2 aman diambil dari snapshot atas karena ID & IconID statis
-      
       if (c1.iconId === c2.iconId) {
         // MATCH FOUND
         setCards(prev => prev.map((c, i) => 
@@ -164,7 +170,7 @@ const App: React.FC = () => {
         setLastEvent(`✅ MATCH! ${player.nickname} gets a point!`);
         
         // Check Game Over
-        const remainingUnmatched = cardsRef.current.filter(c => !c.isMatched).length - 2; // -2 yg baru matched
+        const remainingUnmatched = cardsRef.current.filter(c => !c.isMatched).length - 2; 
         if (remainingUnmatched <= 0) {
           setStatus(GameStatus.GAME_OVER);
           setLastEvent("🏆 GAME OVER! All pairs found!");
@@ -193,8 +199,6 @@ const App: React.FC = () => {
       // Ambil item pertama (FIFO)
       const nextMove = moveQueueRef.current.shift(); 
       if (nextMove) {
-        // Lanjut proses, flag isProcessing tetap true (atau di-set ulang)
-        // Kita tidak set false agar UI tidak flicker
         executeMove(nextMove.firstId, nextMove.secondId, nextMove.player);
       }
     } else {
@@ -209,9 +213,6 @@ const App: React.FC = () => {
     if (processingRef.current || moveQueueRef.current.length > 0) {
       // Masukkan ke antrian
       moveQueueRef.current.push({ firstId, secondId, player });
-      
-      // Update UI log (optional, supaya admin tau ada antrian)
-      // setLastEvent(`Queued: ${player.nickname} (${moveQueueRef.current.length})`);
     } else {
       // Game idle, eksekusi langsung
       executeMove(firstId, secondId, player);
@@ -278,10 +279,12 @@ const App: React.FC = () => {
       socketService.off('streamEnd', handleStreamEnd);
       socketService.disconnect();
     };
-  }, [startGame, handleMoveRequest]); // Updated dependency
+  }, [startGame, handleMoveRequest]); 
 
   const connectToTikTok = () => {
-    if (!username) return;
+    const isIndofinity = socketService.isIndofinity();
+    if (!username && !isIndofinity) return;
+    
     setStatus(GameStatus.CONNECTING);
     socketService.connect(username);
   };
@@ -291,7 +294,8 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-tiktok-dark text-white font-sans overflow-hidden flex flex-col">
+    // Apply theme class here based on state
+    <div className={`theme-${currentTheme} h-screen bg-background text-text-main font-sans overflow-hidden flex flex-col transition-colors duration-300`}>
       <div className="flex-1 overflow-hidden relative">
         {activeTab === 'game' && (
           <GameBoard 
@@ -313,6 +317,8 @@ const App: React.FC = () => {
             status={status}
             connectToTikTok={connectToTikTok}
             disconnect={disconnectTikTok}
+            currentTheme={currentTheme}
+            setTheme={setCurrentTheme}
           />
         )}
         

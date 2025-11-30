@@ -7,9 +7,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class', // Manual dark mode logic via classes
         theme: {
           extend: {
             colors: {
+              // Semantic Colors (Mapped to CSS Variables)
+              background: 'var(--bg-color)',
+              surface: 'var(--surface-color)',
+              'surface-highlight': 'var(--surface-highlight)',
+              primary: 'var(--primary-color)',
+              secondary: 'var(--secondary-color)',
+              'text-main': 'var(--text-main)',
+              'text-muted': 'var(--text-muted)',
+              border: 'var(--border-color)',
+              
+              // Legacy/Specific support
               tiktok: {
                 cyan: '#25F4EE',
                 red: '#FE2C55',
@@ -33,11 +45,51 @@
       }
     </script>
     <style>
-      body {
-        background-color: #121212;
-        color: white;
-        overscroll-behavior: none;
+      /* --- THEME DEFINITIONS --- */
+      
+      /* 1. DARK THEME (Default TikTok Style) */
+      .theme-dark {
+        --bg-color: #121212;
+        --surface-color: #1f2937; /* gray-800 */
+        --surface-highlight: #374151; /* gray-700 */
+        --text-main: #ffffff;
+        --text-muted: #9ca3af; /* gray-400 */
+        --primary-color: #25F4EE; /* tiktok cyan */
+        --secondary-color: #FE2C55; /* tiktok red */
+        --border-color: #374151;
       }
+
+      /* 2. LIGHT THEME (Modern Clean) */
+      .theme-light {
+        --bg-color: #f3f4f6; /* gray-100 */
+        --surface-color: #ffffff;
+        --surface-highlight: #e5e7eb; /* gray-200 */
+        --text-main: #111827; /* gray-900 */
+        --text-muted: #6b7280; /* gray-500 */
+        --primary-color: #3b82f6; /* blue-500 */
+        --secondary-color: #ef4444; /* red-500 */
+        --border-color: #d1d5db;
+      }
+
+      /* 3. CUTE THEME (Playful/Kids - Pink/Purple/Yellow) */
+      .theme-cute {
+        --bg-color: #fff1f2; /* rose-50 */
+        --surface-color: #ffffff;
+        --surface-highlight: #ffe4e6; /* rose-100 */
+        --text-main: #4c1d95; /* violet-900 */
+        --text-muted: #8b5cf6; /* violet-500 */
+        --primary-color: #ec4899; /* pink-500 */
+        --secondary-color: #f59e0b; /* amber-500 */
+        --border-color: #fbcfe8; /* pink-200 */
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        overscroll-behavior: none;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
       .perspective-1000 {
         perspective: 1000px;
       }

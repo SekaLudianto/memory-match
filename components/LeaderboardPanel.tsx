@@ -12,17 +12,17 @@ export const LeaderboardPanel: React.FC<LeaderboardPanelProps> = ({ sessionScore
   const [viewMode, setViewMode] = useState<'round' | 'global'>('global');
 
   return (
-    <div className="h-full p-4 animate-fade-in pb-20 flex flex-col">
-      <h2 className="text-2xl font-bold mb-4 text-white">Rankings</h2>
+    <div className="h-full p-4 animate-fade-in pb-20 flex flex-col bg-background">
+      <h2 className="text-2xl font-bold mb-4 text-text-main">Rankings</h2>
       
       {/* Toggle Switcher */}
-      <div className="flex bg-gray-800/50 p-1 rounded-xl mb-4 border border-gray-700">
+      <div className="flex bg-surface p-1 rounded-xl mb-4 border border-border">
         <button 
           onClick={() => setViewMode('round')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
             viewMode === 'round' 
-              ? 'bg-tiktok-cyan text-black shadow-lg' 
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-primary text-background shadow-lg' 
+              : 'text-text-muted hover:text-text-main'
           }`}
         >
           <Timer size={14} />
@@ -32,8 +32,8 @@ export const LeaderboardPanel: React.FC<LeaderboardPanelProps> = ({ sessionScore
           onClick={() => setViewMode('global')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
             viewMode === 'global' 
-              ? 'bg-tiktok-cyan text-black shadow-lg' 
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-primary text-background shadow-lg' 
+              : 'text-text-muted hover:text-text-main'
           }`}
         >
           <Globe size={14} />
