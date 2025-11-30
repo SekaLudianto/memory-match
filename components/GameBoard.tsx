@@ -11,6 +11,7 @@ interface GameBoardProps {
   startGame: () => void;
   scores: PlayerScore[];
   status: GameStatus;
+  globalScores?: PlayerScore[];
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -19,7 +20,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   lastEvent, 
   startGame,
   scores,
-  status
+  status,
+  globalScores = []
 }) => {
   return (
     <div className="flex flex-col h-full animate-fade-in relative">
@@ -59,11 +61,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </p>
       </div>
 
-      {/* Game Grid Area */}
+      {/* Game Grid Area - Show if Connected OR if we have data (Resume Mode) */}
       <div className="flex-1 flex flex-col justify-center items-center p-4 bg-gray-900/20 overflow-y-auto no-scrollbar relative">
-        {connection.isConnected ? (
-          <div className="w-full max-w-md aspect-square mb-16">
-            <div className="grid grid-cols-4 gap-2 w-full h-full">
+        {connection.isConnected || cards.length > 0 ? (
+          <div className="w-full max-w-md mb-24">
+            <div className="grid grid-cols-4 gap-2 w-full">
               {cards.map(card => (
                 <Card key={card.id} card={card} />
               ))}
@@ -85,9 +87,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </div>
       </div>
 
-      {/* Game Over Overlay - Shows Session Scores */}
+      {/* Game Over Overlay */}
       {status === GameStatus.GAME_OVER && (
-        <GameOverOverlay scores={scores} onRestart={startGame} />
+        <GameOverOverlay 
+          scores={scores} 
+          globalScores={globalScores}
+          onRestart={startGame} 
+        />
       )}
     </div>
   );

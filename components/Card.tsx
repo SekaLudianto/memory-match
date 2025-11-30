@@ -51,11 +51,21 @@ export const Card: React.FC<CardProps> = ({ card }) => {
             <HelpCircle className="text-white" />
           )}
           
+          {/* Winner Badge with Avatar */}
           {card.matchedBy && (
-            <div className="absolute bottom-1 w-full text-center">
-               <span className="text-[0.6rem] bg-black/60 px-2 py-0.5 rounded-full text-white truncate max-w-[90%] inline-block">
-                 {card.matchedBy}
-               </span>
+            <div className="absolute bottom-1 w-full flex justify-center items-center px-1">
+               <div className="bg-black/70 pl-0.5 pr-2 py-0.5 rounded-full flex items-center gap-1.5 max-w-full">
+                 {card.matchedByAvatar && (
+                   <img 
+                     src={card.matchedByAvatar} 
+                     className="w-4 h-4 rounded-full border border-tiktok-cyan object-cover flex-shrink-0" 
+                     alt="" 
+                   />
+                 )}
+                 <span className="text-[0.6rem] text-white truncate font-medium">
+                   {card.matchedBy}
+                 </span>
+               </div>
             </div>
           )}
         </div>

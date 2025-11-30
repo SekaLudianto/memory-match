@@ -8,9 +8,17 @@ import { GameBoard } from './components/GameBoard';
 import { SettingsPanel } from './components/SettingsPanel';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { BottomNavigation } from './components/BottomNavigation';
+import { GameOverOverlay } from './components/GameOverOverlay';
 
-const GRID_SIZE = 16; // 4x4 grid
+const GRID_SIZE = 20; // 5x4 grid
 const LEADERBOARD_STORAGE_KEY = 'TIKTOK_MEMORY_LEADERBOARD';
+
+// Interface untuk item di dalam antrian
+interface MoveRequest {
+  firstId: number;
+  secondId: number;
+  player: ChatMessage;
+}
 
 const App: React.FC = () => {
   // Game State
@@ -20,9 +28,7 @@ const App: React.FC = () => {
   const [lastEvent, setLastEvent] = useState<string>('Waiting for comments...');
   
   // Scoring State
-  // sessionScores: Resets every game (for Game Over screen)
   const [sessionScores, setSessionScores] = useState<PlayerScore[]>([]); 
-  // leaderboard: Persists forever (for Rankings tab)
   const [leaderboard, setLeaderboard] = useState<PlayerScore[]>(() => {
     try {
       const stored = localStorage.getItem(LEADERBOARD_STORAGE_KEY);
@@ -49,6 +55,9 @@ const App: React.FC = () => {
   const cardsRef = useRef<CardItem[]>([]);
   const statusRef = useRef(status);
   
+  // QUEUE SYSTEM REF
+  const moveQueueRef = useRef<MoveRequest[]>([]);
+
   // Sync ref with state
   useEffect(() => {
     cardsRef.current = cards;
@@ -63,12 +72,12 @@ const App: React.FC = () => {
 
   // Initialize Game
   const startGame = useCallback(() => {
-    // Generate new deck (random images thanks to updated utils.ts)
     const newDeck = generateDeck(GRID_SIZE);
     setCards(newDeck);
     
-    // Reset session scores, but keep leaderboard
+    // Reset session vars
     setSessionScores([]);
+    moveQueueRef.current = []; // Clear queue on new game
     
     setIsProcessing(false);
     setStatus(GameStatus.PLAYING);
@@ -79,19 +88,19 @@ const App: React.FC = () => {
   const updatePlayerScore = (list: PlayerScore[], player: ChatMessage, points: number): PlayerScore[] => {
     const existingIndex = list.findIndex(p => p.uniqueId === player.uniqueId);
     if (existingIndex > -1) {
-      // Update existing
       const newList = [...list];
       newList[existingIndex] = {
         ...newList[existingIndex],
+        nickname: player.nickname,
         score: newList[existingIndex].score + points,
         lastMatchTime: Date.now(),
-        profilePictureUrl: player.profilePictureUrl // Update pic if changed
+        profilePictureUrl: player.profilePictureUrl
       };
       return newList;
     } else {
-      // Add new
       return [...list, {
         uniqueId: player.uniqueId,
+        nickname: player.nickname,
         profilePictureUrl: player.profilePictureUrl,
         score: points,
         lastMatchTime: Date.now()
@@ -99,57 +108,69 @@ const App: React.FC = () => {
     }
   };
 
-  // Logic to process a move
-  const handleMoveAttempt = useCallback((firstId: number, secondId: number, player: ChatMessage) => {
-    if (processingRef.current) return;
-    
+  // CORE LOGIC: Execute Move
+  // Ini fungsi yang benar-benar menjalankan logika game
+  const executeMove = useCallback((firstId: number, secondId: number, player: ChatMessage) => {
     const currentCards = cardsRef.current;
     
-    // Validate Indices (1-based from user)
+    // --- VALIDATION LAYER ---
     const card1Index = currentCards.findIndex(c => c.id === firstId);
     const card2Index = currentCards.findIndex(c => c.id === secondId);
 
-    // Validation checks
-    if (card1Index === -1 || card2Index === -1) return; // Invalid IDs
-    if (card1Index === card2Index) return; // Same card
-    if (currentCards[card1Index].isMatched || currentCards[card2Index].isMatched) return; // Already matched
-    if (currentCards[card1Index].isFlipped || currentCards[card2Index].isFlipped) return; // Already currently flipped
+    // Invalid IDs or Same Card or Already Matched/Flipped
+    if (card1Index === -1 || card2Index === -1 || 
+        card1Index === card2Index || 
+        currentCards[card1Index].isMatched || currentCards[card2Index].isMatched ||
+        currentCards[card1Index].isFlipped || currentCards[card2Index].isFlipped
+    ) {
+      // Jika move tidak valid, langsung cek antrian berikutnya tanpa delay
+      processNextInQueue();
+      return;
+    }
 
-    // Lock game logic
-    setIsProcessing(true);
-    setLastEvent(`${player.uniqueId} guessed ${firstId} & ${secondId}...`);
+    // --- EXECUTION LAYER ---
+    setIsProcessing(true); // Lock visual processing
+    setLastEvent(`${player.nickname} guessed ${firstId} & ${secondId}...`);
 
-    // 1. Flip Cards
+    // 1. Flip Cards Visual
     setCards(prev => prev.map((c, i) => 
       (i === card1Index || i === card2Index) ? { ...c, isFlipped: true } : c
     ));
 
-    // 2. Check Match after delay
+    // 2. Logic Evaluation (Delayed)
     setTimeout(() => {
       const c1 = currentCards[card1Index];
       const c2 = currentCards[card2Index];
+      
+      // Karena state cardsRef mungkin berubah selama timeout, kita perlu akses yang terbaru via state setter logic atau ref
+      // Tapi untuk comparison c1 dan c2 aman diambil dari snapshot atas karena ID & IconID statis
       
       if (c1.iconId === c2.iconId) {
         // MATCH FOUND
         setCards(prev => prev.map((c, i) => 
           (i === card1Index || i === card2Index) 
-            ? { ...c, isMatched: true, isFlipped: true, matchedBy: player.uniqueId } 
+            ? { 
+                ...c, 
+                isMatched: true, 
+                isFlipped: true, 
+                matchedBy: player.nickname,
+                matchedByAvatar: player.profilePictureUrl 
+              } 
             : c
         ));
         
-        // Update Session Scores (Current Game)
         setSessionScores(prev => updatePlayerScore(prev, player, 1));
-        
-        // Update Persistent Leaderboard (Accumulate)
         setLeaderboard(prev => updatePlayerScore(prev, player, 1));
-
-        setLastEvent(`✅ MATCH! ${player.uniqueId} gets a point!`);
+        setLastEvent(`✅ MATCH! ${player.nickname} gets a point!`);
         
         // Check Game Over
-        const unmatchedCount = cardsRef.current.filter(c => !c.isMatched).length - 2; // -2 because we just matched 2
-        if (unmatchedCount <= 0) {
+        const remainingUnmatched = cardsRef.current.filter(c => !c.isMatched).length - 2; // -2 yg baru matched
+        if (remainingUnmatched <= 0) {
           setStatus(GameStatus.GAME_OVER);
           setLastEvent("🏆 GAME OVER! All pairs found!");
+          setIsProcessing(false);
+          moveQueueRef.current = []; // Clear queue on win
+          return;
         }
 
       } else {
@@ -160,9 +181,42 @@ const App: React.FC = () => {
         setLastEvent(`❌ No match. Try again!`);
       }
 
-      setIsProcessing(false);
-    }, 1500); // 1.5s delay to see the cards
+      // 3. Process Next Item in Queue
+      processNextInQueue();
+
+    }, 1500); // Durasi animasi kartu terbuka
   }, []);
+
+  // QUEUE PROCESSOR
+  const processNextInQueue = useCallback(() => {
+    if (moveQueueRef.current.length > 0) {
+      // Ambil item pertama (FIFO)
+      const nextMove = moveQueueRef.current.shift(); 
+      if (nextMove) {
+        // Lanjut proses, flag isProcessing tetap true (atau di-set ulang)
+        // Kita tidak set false agar UI tidak flicker
+        executeMove(nextMove.firstId, nextMove.secondId, nextMove.player);
+      }
+    } else {
+      // Antrian kosong, buka kunci
+      setIsProcessing(false);
+    }
+  }, [executeMove]);
+
+  // PUBLIC HANDLER: Called by Socket Event
+  const handleMoveRequest = useCallback((firstId: number, secondId: number, player: ChatMessage) => {
+    // Jika game sedang proses animasi ATAU antrian sudah ada isinya
+    if (processingRef.current || moveQueueRef.current.length > 0) {
+      // Masukkan ke antrian
+      moveQueueRef.current.push({ firstId, secondId, player });
+      
+      // Update UI log (optional, supaya admin tau ada antrian)
+      // setLastEvent(`Queued: ${player.nickname} (${moveQueueRef.current.length})`);
+    } else {
+      // Game idle, eksekusi langsung
+      executeMove(firstId, secondId, player);
+    }
+  }, [executeMove]);
 
   // Handle Socket Events
   useEffect(() => {
@@ -172,29 +226,41 @@ const App: React.FC = () => {
         roomId: state.roomId,
         error: null
       });
-      // Auto start game on connection
-      setStatus(GameStatus.PLAYING);
-      startGame();
+      
+      const hasActiveGame = cardsRef.current.length > 0 && statusRef.current !== GameStatus.GAME_OVER;
+      
+      if (hasActiveGame) {
+        setStatus(GameStatus.PLAYING);
+        setLastEvent('Connected! Resuming game...');
+      } else {
+        setStatus(GameStatus.PLAYING);
+        startGame();
+      }
+      
       setActiveTab('game');
     };
 
     const handleDisconnected = (msg: string) => {
       setConnection(prev => ({ ...prev, isConnected: false, error: msg }));
-      setStatus(GameStatus.IDLE);
+      
+      if (cardsRef.current.length > 0 && statusRef.current !== GameStatus.GAME_OVER) {
+         setLastEvent('Disconnected. Waiting for reconnect...');
+      } else {
+         setStatus(GameStatus.IDLE);
+      }
     };
 
     const handleChat = (msg: ChatMessage) => {
       if (statusRef.current !== GameStatus.PLAYING) return;
       
       const comment = msg.comment.trim();
-      
-      // Regex to find two numbers
       const match = comment.match(/(\d+)\s+[^\d]*(\d+)/) || comment.match(/(\d+)[^\d]+(\d+)/);
       
       if (match) {
         const first = parseInt(match[1]);
         const second = parseInt(match[2]);
-        handleMoveAttempt(first, second, msg);
+        // Call the Queued Handler instead of direct execute
+        handleMoveRequest(first, second, msg);
       }
     };
 
@@ -212,7 +278,7 @@ const App: React.FC = () => {
       socketService.off('streamEnd', handleStreamEnd);
       socketService.disconnect();
     };
-  }, [startGame, handleMoveAttempt]); 
+  }, [startGame, handleMoveRequest]); // Updated dependency
 
   const connectToTikTok = () => {
     if (!username) return;
@@ -226,8 +292,6 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen bg-tiktok-dark text-white font-sans overflow-hidden flex flex-col">
-      
-      {/* Content Area - Switches based on activeTab */}
       <div className="flex-1 overflow-hidden relative">
         {activeTab === 'game' && (
           <GameBoard 
@@ -235,8 +299,9 @@ const App: React.FC = () => {
             connection={connection} 
             lastEvent={lastEvent} 
             startGame={startGame}
-            scores={sessionScores} // Game Board/Over screen shows current session scores
+            scores={sessionScores} 
             status={status}
+            globalScores={leaderboard}
           />
         )}
         
@@ -252,11 +317,13 @@ const App: React.FC = () => {
         )}
         
         {activeTab === 'leaderboard' && (
-          <LeaderboardPanel scores={leaderboard} /> // Rankings tab shows All-Time scores
+          <LeaderboardPanel 
+            sessionScores={sessionScores} 
+            globalScores={leaderboard} 
+          /> 
         )}
       </div>
 
-      {/* Bottom Navigation */}
       <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
       
     </div>

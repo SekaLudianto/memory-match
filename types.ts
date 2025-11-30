@@ -16,11 +16,13 @@ export interface CardItem {
   iconId: number; // The logic ID (e.g., 0-7 for pairs)
   isFlipped: boolean;
   isMatched: boolean;
-  matchedBy?: string; // uniqueId of the user who matched it
+  matchedBy?: string; // Display name (nickname) of the user who matched it
+  matchedByAvatar?: string; // URL of the user's profile picture
 }
 
 export interface PlayerScore {
   uniqueId: string;
+  nickname?: string; // Add nickname field
   profilePictureUrl: string;
   score: number;
   lastMatchTime: number;

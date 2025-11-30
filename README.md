@@ -18,4 +18,3 @@ View your app in AI Studio: https://ai.studio/apps/drive/1v7G12pLv_lDM7-RZ0c9Kbu
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
-"# memory-match" 
