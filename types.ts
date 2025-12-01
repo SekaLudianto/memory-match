@@ -1,4 +1,8 @@
+
 export type Theme = 'dark' | 'light' | 'cute';
+
+// New: Card Image Theme Options
+export type CardThemeMode = 'mixed' | 'classic' | 'yummy' | 'animals' | 'tech';
 
 export interface TikTokProfile {
   uniqueId: string;

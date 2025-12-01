@@ -12,11 +12,12 @@ export const LeaderboardPanel: React.FC<LeaderboardPanelProps> = ({ sessionScore
   const [viewMode, setViewMode] = useState<'round' | 'global'>('global');
 
   return (
-    <div className="h-full p-4 animate-fade-in pb-20 flex flex-col bg-background">
-      <h2 className="text-2xl font-bold mb-4 text-text-main">Rankings</h2>
+    // pb-20 accounts for the bottom navigation bar so the list end isn't covered
+    <div className="h-full flex flex-col p-4 animate-fade-in pb-24 bg-background">
+      <h2 className="text-2xl font-bold mb-4 text-text-main flex-none">Rankings</h2>
       
       {/* Toggle Switcher */}
-      <div className="flex bg-surface p-1 rounded-xl mb-4 border border-border">
+      <div className="flex-none flex bg-surface p-1 rounded-xl mb-4 border border-border">
         <button 
           onClick={() => setViewMode('round')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
@@ -41,7 +42,7 @@ export const LeaderboardPanel: React.FC<LeaderboardPanelProps> = ({ sessionScore
         </button>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
          {viewMode === 'round' ? (
            <Leaderboard 
               scores={sessionScores} 

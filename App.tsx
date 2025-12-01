@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { socketService } from './services/socket';
-import { CardItem, GameStatus, PlayerScore, ChatMessage, ConnectionState, Theme } from './types';
+import { CardItem, GameStatus, PlayerScore, ChatMessage, ConnectionState, Theme, CardThemeMode } from './types';
 import { generateDeck } from './utils';
 
 // Components
@@ -13,6 +13,8 @@ import { GameOverOverlay } from './components/GameOverOverlay';
 const GRID_SIZE = 20; // 5x4 grid
 const LEADERBOARD_STORAGE_KEY = 'TIKTOK_MEMORY_LEADERBOARD';
 const THEME_STORAGE_KEY = 'TIKTOK_MEMORY_THEME';
+const CARD_THEME_STORAGE_KEY = 'TIKTOK_MEMORY_CARD_THEME';
+const AVATAR_BG_STORAGE_KEY = 'TIKTOK_MEMORY_AVATAR_BG';
 
 // Interface untuk item di dalam antrian
 interface MoveRequest {
@@ -22,9 +24,19 @@ interface MoveRequest {
 }
 
 const App: React.FC = () => {
-  // Theme State
+  // Theme State (UI)
   const [currentTheme, setCurrentTheme] = useState<Theme>(() => {
     return (localStorage.getItem(THEME_STORAGE_KEY) as Theme) || 'dark';
+  });
+
+  // Card Theme State (Game Images)
+  const [cardTheme, setCardTheme] = useState<CardThemeMode>(() => {
+    return (localStorage.getItem(CARD_THEME_STORAGE_KEY) as CardThemeMode) || 'mixed';
+  });
+
+  // Avatar Background State (New)
+  const [showAvatarBackgrounds, setShowAvatarBackgrounds] = useState<boolean>(() => {
+    return localStorage.getItem(AVATAR_BG_STORAGE_KEY) === 'true';
   });
 
   // Game State
@@ -80,9 +92,18 @@ const App: React.FC = () => {
     localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
   }, [currentTheme]);
 
+  useEffect(() => {
+    localStorage.setItem(CARD_THEME_STORAGE_KEY, cardTheme);
+  }, [cardTheme]);
+
+  useEffect(() => {
+    localStorage.setItem(AVATAR_BG_STORAGE_KEY, String(showAvatarBackgrounds));
+  }, [showAvatarBackgrounds]);
+
   // Initialize Game
   const startGame = useCallback(() => {
-    const newDeck = generateDeck(GRID_SIZE);
+    // Generate deck based on selected Card Theme
+    const newDeck = generateDeck(GRID_SIZE, cardTheme);
     setCards(newDeck);
     
     // Reset session vars
@@ -91,8 +112,8 @@ const App: React.FC = () => {
     
     setIsProcessing(false);
     setStatus(GameStatus.PLAYING);
-    setLastEvent('Game Started! Type two numbers (e.g., "1 5") to flip!');
-  }, []);
+    setLastEvent(`Game Started! Mode: ${cardTheme.toUpperCase()}`);
+  }, [cardTheme]); 
 
   // Helper to update scores
   const updatePlayerScore = (list: PlayerScore[], player: ChatMessage, points: number): PlayerScore[] => {
@@ -294,9 +315,9 @@ const App: React.FC = () => {
   };
 
   return (
-    // Apply theme class here based on state
-    <div className={`theme-${currentTheme} h-screen bg-background text-text-main font-sans overflow-hidden flex flex-col transition-colors duration-300`}>
-      <div className="flex-1 overflow-hidden relative">
+    // Use h-[100dvh] for dynamic viewport height on mobile
+    <div className={`theme-${currentTheme} w-full h-[100dvh] bg-background text-text-main font-sans overflow-hidden flex flex-col transition-colors duration-300`}>
+      <div className="flex-1 w-full h-full overflow-hidden relative flex flex-col">
         {activeTab === 'game' && (
           <GameBoard 
             cards={cards} 
@@ -306,6 +327,7 @@ const App: React.FC = () => {
             scores={sessionScores} 
             status={status}
             globalScores={leaderboard}
+            showAvatarBackgrounds={showAvatarBackgrounds} // Pass the setting
           />
         )}
         
@@ -319,6 +341,10 @@ const App: React.FC = () => {
             disconnect={disconnectTikTok}
             currentTheme={currentTheme}
             setTheme={setCurrentTheme}
+            cardTheme={cardTheme}
+            setCardTheme={setCardTheme}
+            showAvatarBackgrounds={showAvatarBackgrounds} // Pass setting
+            setShowAvatarBackgrounds={setShowAvatarBackgrounds} // Pass setter
           />
         )}
         

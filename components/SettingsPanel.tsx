@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ConnectionState, GameStatus, Theme } from '../types';
-import { WifiOff, Info, Server, Lock, Palette, Moon, Sun, Smile } from 'lucide-react';
+import { ConnectionState, GameStatus, Theme, CardThemeMode } from '../types';
+import { WifiOff, Info, Server, Lock, Palette, Moon, Sun, Smile, Image, Shuffle, Pizza, Zap, PawPrint, Users } from 'lucide-react';
 import { socketService } from '../services/socket';
 
 interface SettingsPanelProps {
@@ -12,6 +12,10 @@ interface SettingsPanelProps {
   disconnect: () => void;
   currentTheme: Theme;
   setTheme: (theme: Theme) => void;
+  cardTheme: CardThemeMode;
+  setCardTheme: (mode: CardThemeMode) => void;
+  showAvatarBackgrounds: boolean; // New prop
+  setShowAvatarBackgrounds: (show: boolean) => void; // New setter
 }
 
 const SERVER_OPTIONS = [
@@ -27,7 +31,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   connectToTikTok,
   disconnect,
   currentTheme,
-  setTheme
+  setTheme,
+  cardTheme,
+  setCardTheme,
+  showAvatarBackgrounds,
+  setShowAvatarBackgrounds
 }) => {
   const [selectedServer, setSelectedServer] = useState(socketService.getBackendUrl());
   const isIndofinity = selectedServer.includes('ws://') || selectedServer.includes('62024');
@@ -38,45 +46,75 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     socketService.setBackendUrl(newUrl);
   };
 
-  useEffect(() => {
-    if (isIndofinity) {
-      // Optional logic
-    }
-  }, [isIndofinity]);
+  const renderThemeButton = (theme: Theme, label: string, Icon: React.ElementType) => (
+    <button 
+      onClick={() => setTheme(theme)}
+      className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 ${currentTheme === theme ? 'border-primary bg-surface-highlight' : 'border-transparent bg-background hover:bg-surface-highlight'}`}
+    >
+      <Icon size={20} className={`mb-2 ${currentTheme === theme ? 'text-primary' : 'text-text-muted'}`} />
+      <span className="text-xs font-medium text-text-main">{label}</span>
+    </button>
+  );
+
+  const renderCardThemeButton = (mode: CardThemeMode, label: string, Icon: React.ElementType) => (
+    <button 
+      onClick={() => setCardTheme(mode)}
+      className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 ${cardTheme === mode ? 'border-secondary bg-surface-highlight' : 'border-transparent bg-background hover:bg-surface-highlight'}`}
+    >
+      <Icon size={20} className={`mb-2 ${cardTheme === mode ? 'text-secondary' : 'text-text-muted'}`} />
+      <span className="text-[10px] font-medium text-text-main text-center leading-tight">{label}</span>
+    </button>
+  );
 
   return (
-    <div className="flex flex-col h-full p-6 animate-fade-in bg-background overflow-y-auto no-scrollbar pb-24">
+    <div className="flex-1 min-h-0 flex flex-col p-6 animate-fade-in bg-background overflow-y-auto no-scrollbar pb-24">
       <h2 className="text-2xl font-bold mb-6 text-text-main">Setup Game</h2>
       
       <div className="space-y-6">
         
-        {/* THEME SELECTOR */}
+        {/* UI THEME SELECTOR */}
         <div className="bg-surface rounded-xl p-5 border border-border shadow-sm">
           <label className="text-xs font-bold text-text-muted uppercase mb-3 block tracking-wider flex items-center gap-2">
-            <Palette size={14} /> Appearance
+            <Palette size={14} /> UI Theme
           </label>
           <div className="grid grid-cols-3 gap-3">
-            <button 
-              onClick={() => setTheme('dark')}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${currentTheme === 'dark' ? 'border-primary bg-surface-highlight' : 'border-transparent bg-background hover:bg-surface-highlight'}`}
-            >
-              <Moon size={20} className="mb-2 text-primary" />
-              <span className="text-xs font-medium text-text-main">Dark</span>
-            </button>
-            <button 
-              onClick={() => setTheme('light')}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${currentTheme === 'light' ? 'border-primary bg-surface-highlight' : 'border-transparent bg-background hover:bg-surface-highlight'}`}
-            >
-              <Sun size={20} className="mb-2 text-primary" />
-              <span className="text-xs font-medium text-text-main">Light</span>
-            </button>
-            <button 
-              onClick={() => setTheme('cute')}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${currentTheme === 'cute' ? 'border-primary bg-surface-highlight' : 'border-transparent bg-background hover:bg-surface-highlight'}`}
-            >
-              <Smile size={20} className="mb-2 text-primary" />
-              <span className="text-xs font-medium text-text-main">Cute</span>
-            </button>
+            {renderThemeButton('dark', 'Dark', Moon)}
+            {renderThemeButton('light', 'Light', Sun)}
+            {renderThemeButton('cute', 'Cute', Smile)}
+          </div>
+        </div>
+
+        {/* CARD IMAGE THEME SELECTOR */}
+        <div className="bg-surface rounded-xl p-5 border border-border shadow-sm">
+          <label className="text-xs font-bold text-text-muted uppercase mb-3 block tracking-wider flex items-center gap-2">
+            <Image size={14} /> Card Images
+          </label>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {renderCardThemeButton('mixed', 'Campur', Shuffle)}
+            {renderCardThemeButton('classic', 'Klasik', Zap)}
+            {renderCardThemeButton('yummy', 'Yummy', Pizza)}
+            {renderCardThemeButton('animals', 'Hewan', PawPrint)}
+            {renderCardThemeButton('tech', 'Tech', Server)}
+          </div>
+          
+          {/* NEW: Toggle for Avatar Backgrounds */}
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+             <div className="flex items-center gap-2 text-text-main">
+                <Users size={16} className="text-primary" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold">Use Leaderboard Avatars</span>
+                  <span className="text-[10px] text-text-muted">Fill cards with top players</span>
+                </div>
+             </div>
+             <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={showAvatarBackgrounds} 
+                  onChange={(e) => setShowAvatarBackgrounds(e.target.checked)}
+                  className="sr-only peer" 
+                />
+                <div className="w-9 h-5 bg-surface-highlight peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary border border-border"></div>
+              </label>
           </div>
         </div>
 
@@ -95,9 +133,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-              </div>
           </div>
           {isIndofinity && (
             <p className="text-[10px] text-green-500 mt-2 ml-1 flex items-center gap-1">
@@ -151,27 +186,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <WifiOff size={14} /> {connection.error}
               </div>
           )}
-        </div>
-
-        {/* Rules Card */}
-        <div className="bg-surface rounded-xl p-5 border border-border shadow-sm">
-          <div className="flex items-center gap-2 mb-3 text-primary">
-              <Info size={18} />
-              <span className="font-bold text-sm">How to Play</span>
-          </div>
-          <ul className="text-sm text-text-muted space-y-2 list-disc pl-4">
-            <li>
-               <strong>Server:</strong> Choose <em>Public</em> for generic use, or <em>Indofinity</em> for local tools.
-            </li>
-            <li>
-               {isIndofinity 
-                 ? "Setup the target username inside your Indofinity application."
-                 : "Enter the TikTok Username you want to connect to."
-               }
-            </li>
-            <li>Connect to the stream.</li>
-            <li>Viewers must comment two numbers (e.g., <span className="text-primary font-mono bg-background border border-border px-1 rounded">1 5</span>) to flip cards.</li>
-          </ul>
         </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>TikTok Live Memory Match</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -20,6 +21,11 @@
               'text-main': 'var(--text-main)',
               'text-muted': 'var(--text-muted)',
               border: 'var(--border-color)',
+              
+              // Card Specific Semantics
+              'card-hidden': 'var(--card-bg-hidden)',
+              'card-revealed': 'var(--card-bg-revealed)',
+              'card-text': 'var(--card-text-hidden)',
               
               // Legacy/Specific support
               tiktok: {
@@ -47,47 +53,79 @@
     <style>
       /* --- THEME DEFINITIONS --- */
       
-      /* 1. DARK THEME (Default TikTok Style) */
+      /* 1. DARK THEME (PREMIUM GLASS / ZINC STYLE) */
       .theme-dark {
-        --bg-color: #121212;
-        --surface-color: #1f2937; /* gray-800 */
-        --surface-highlight: #374151; /* gray-700 */
-        --text-main: #ffffff;
-        --text-muted: #9ca3af; /* gray-400 */
-        --primary-color: #25F4EE; /* tiktok cyan */
-        --secondary-color: #FE2C55; /* tiktok red */
-        --border-color: #374151;
+        --bg-color: #09090b;          /* Zinc 950 */
+        --surface-color: #18181b;     /* Zinc 900 */
+        --surface-highlight: #27272a; /* Zinc 800 */
+        --text-main: #fafafa;         /* White */
+        --text-muted: #a1a1aa;        /* Zinc 400 */
+        --primary-color: #22d3ee;     /* Cyan 400 */
+        --secondary-color: #f43f5e;   /* Rose 500 */
+        
+        /* THE KEY TO ELEGANCE: Translucent White Borders */
+        --border-color: rgba(255, 255, 255, 0.08); 
+        
+        /* Card Colors - Deep & Glossy */
+        --card-bg-hidden: #18181b; 
+        --card-bg-revealed: #1e1b4b; 
+        --card-text-hidden: #22d3ee;
       }
 
-      /* 2. LIGHT THEME (Modern Clean) */
+      /* 2. LIGHT THEME (Clean Soft) */
       .theme-light {
-        --bg-color: #f3f4f6; /* gray-100 */
-        --surface-color: #ffffff;
-        --surface-highlight: #e5e7eb; /* gray-200 */
-        --text-main: #111827; /* gray-900 */
-        --text-muted: #6b7280; /* gray-500 */
-        --primary-color: #3b82f6; /* blue-500 */
-        --secondary-color: #ef4444; /* red-500 */
-        --border-color: #d1d5db;
+        --bg-color: #F8FAFC; /* Slate 50 */
+        --surface-color: #FFFFFF;
+        --surface-highlight: #F1F5F9; /* Slate 100 */
+        --text-main: #0F172A; /* Slate 900 */
+        --text-muted: #64748B; /* Slate 500 */
+        --primary-color: #0EA5E9; /* Sky 500 */
+        --secondary-color: #EF4444; /* Red 500 */
+        
+        /* Translucent Black Borders for Light Mode */
+        --border-color: rgba(0, 0, 0, 0.06); 
+
+        /* Card Colors */
+        --card-bg-hidden: #FFFFFF; 
+        --card-bg-revealed: #EFF6FF; 
+        --card-text-hidden: #0EA5E9; 
       }
 
-      /* 3. CUTE THEME (Playful/Kids - Pink/Purple/Yellow) */
+      /* 3. CUTE THEME (Vibrant Candy) */
       .theme-cute {
-        --bg-color: #fff1f2; /* rose-50 */
-        --surface-color: #ffffff;
-        --surface-highlight: #ffe4e6; /* rose-100 */
-        --text-main: #4c1d95; /* violet-900 */
-        --text-muted: #8b5cf6; /* violet-500 */
-        --primary-color: #ec4899; /* pink-500 */
-        --secondary-color: #f59e0b; /* amber-500 */
-        --border-color: #fbcfe8; /* pink-200 */
+        --bg-color: #FFF5F7;          
+        --surface-color: #FFFFFF;     
+        --surface-highlight: #FCE7F3; 
+        --text-main: #5B21B6;         
+        --text-muted: #DB2777;        
+        --primary-color: #EC4899;     
+        --secondary-color: #F59E0B;   
+        
+        /* Translucent Pink Borders */
+        --border-color: rgba(236, 72, 153, 0.2); 
+
+        /* Card Colors */
+        --card-bg-hidden: #FFFFFF;
+        --card-bg-revealed: #FFFBEB;  
+        --card-text-hidden: #EC4899;  
       }
 
-      body {
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100dvh; /* Dynamic Viewport Height */
+        overflow: hidden; /* Prevent body scroll */
         background-color: var(--bg-color);
         color: var(--text-main);
-        overscroll-behavior: none;
+        overscroll-behavior: none; /* Disable pull-to-refresh */
         transition: background-color 0.3s ease, color 0.3s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #root {
+        height: 100%;
+        width: 100%;
       }
 
       .perspective-1000 {
@@ -110,6 +148,17 @@
       .no-scrollbar {
           -ms-overflow-style: none;  /* IE and Edge */
           scrollbar-width: none;  /* Firefox */
+      }
+      
+      /* Glass Panel Helper */
+      .glass-panel {
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+      }
+      .theme-dark .glass-panel {
+        background: rgba(24, 24, 27, 0.8);
+        border-color: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(8px);
       }
     </style>
   <script type="importmap">
